@@ -35,8 +35,11 @@ import org.jetbrains.kotlin.types.TypeUtils
 
 internal object DWARF {
     val producer                       = "konanc ${KonanVersion.CURRENT} / kotlin-compiler: ${KotlinVersion.CURRENT}"
-    /* TODO: from LLVM sources is unclear what runtimeVersion corresponds to term in terms of dwarf specification. */
-    val runtimeVersion                 = 2
+    /**
+     * [runtimeVersion] there are no relation in [DWARFCompileUnit], by it possible to use some sort of runtime
+     * version mechanism in [lldb_private::ObjCLanguageRuntime::ObjCRuntimeVersions].
+     */
+    val runtimeVersion                 = 1
     val dwarfVersionMetaDataNodeName   = "Dwarf Name".mdString()
     val dwarfDebugInfoMetaDataNodeName = "Debug Info Version".mdString()
     val dwarfVersion = 2 /* TODO: configurable? like gcc/clang -gdwarf-2 and so on. */
