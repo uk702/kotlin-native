@@ -2,3 +2,4 @@ file program.kexe
 log enable lldb expr
 b kfun:main(kotlin.Array<kotlin.String>)
 r
+№expr -- kfun\:foo\(\)()
