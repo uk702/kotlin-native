@@ -22,7 +22,7 @@ package kotlin.collections
  * either throwing exception or returning some kind of implementation-specific default value.
  */
 @kotlin.internal.InlineExposed
-internal fun <E> arrayOfUninitializedElements(size: Int): Array<E> {
+/*internal*/ fun <E> arrayOfUninitializedElements(size: Int): Array<E> {
     // TODO: special case for size == 0?
     return Array<E>(size)
 }
@@ -186,11 +186,12 @@ fun BooleanArray.copyOfUninitializedElements(fromIndex: Int, toIndex: Int): Bool
  * Attempts to read _uninitialized_ value work in implementation-dependent manner,
  * either throwing exception or returning some kind of implementation-specific default value.
  */
-internal fun <E> Array<E>.resetAt(index: Int) {
+/*internal*/ fun <E> Array<E>.resetAt(index: Int) {
     (@Suppress("UNCHECKED_CAST")(this as Array<Any?>))[index] = null
 }
 
 @SymbolName("Kotlin_Array_fillImpl")
+@PointsTo(0b01000) // <array> points to <value>.
 external private fun fillImpl(array: Array<Any>, fromIndex: Int, toIndex: Int, value: Any?)
 
 @SymbolName("Kotlin_IntArray_fillImpl")
@@ -203,7 +204,7 @@ external private fun fillImpl(array: IntArray, fromIndex: Int, toIndex: Int, val
  * Attempts to read _uninitialized_ values work in implementation-dependent manner,
  * either throwing exception or returning some kind of implementation-specific default value.
  */
-internal fun <E> Array<E>.resetRange(fromIndex: Int, toIndex: Int) {
+/*internal*/ fun <E> Array<E>.resetRange(fromIndex: Int, toIndex: Int) {
     fillImpl(@Suppress("UNCHECKED_CAST") (this as Array<Any>), fromIndex, toIndex, null)
 }
 
@@ -212,6 +213,7 @@ internal fun IntArray.fill(fromIndex: Int, toIndex: Int, value: Int) {
 }
 
 @SymbolName("Kotlin_Array_copyImpl")
+@PointsTo(0, 0, 0b000001) // <destination> points to <array>.
 external private fun copyImpl(array: Array<Any>, fromIndex: Int,
                          destination: Array<Any>, toIndex: Int, count: Int)
 

@@ -226,7 +226,9 @@ internal class FunctionGenerationContext(val function: LLVMValueRef,
     fun call(llvmFunction: LLVMValueRef, args: List<LLVMValueRef>,
              resultLifetime: Lifetime = Lifetime.IRRELEVANT,
              lazyLandingpad: () -> LLVMBasicBlockRef? = { null }): LLVMValueRef {
-        val callArgs = if (isObjectReturn(llvmFunction.type)) {
+        val callArgs = if (!isObjectReturn(llvmFunction.type)) {
+            args
+        } else {
             // If function returns an object - create slot for the returned value or give local arena.
             // This allows appropriate rootset accounting by just looking at the stack slots,
             // along with ability to allocate in appropriate arena.
@@ -235,15 +237,23 @@ internal class FunctionGenerationContext(val function: LLVMValueRef,
                     localAllocs++
                     arenaSlot!!
                 }
-                SlotType.RETURN -> returnSlot!!
-            // TODO: for RETURN_IF_ARENA choose between created slot and arenaSlot
-            // dynamically.
+
+                SlotType.RETURN -> {
+                    if (returnSlot == null) {
+                        println("BUGBUGBUG: $functionDescriptor")
+                    }
+                    returnSlot!!
+                }
+
+                // TODO: for RETURN_IF_ARENA choose between created slot and arenaSlot dynamically.
                 SlotType.ANONYMOUS, SlotType.RETURN_IF_ARENA -> vars.createAnonymousSlot()
-                else -> throw Error("Incorrect slot type")
+
+                // TODO: for PARAM_IF_ARENA choose between created slot and arenaSlot dynamically.
+                is SlotType.PARAM_IF_ARENA -> vars.createAnonymousSlot()
+
+                else -> throw Error("Incorrect slot type: ${resultLifetime.slotType}")
             }
             args + resultSlot
-        } else {
-            args
         }
         return callRaw(llvmFunction, callArgs, lazyLandingpad)
     }
