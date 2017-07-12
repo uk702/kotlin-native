@@ -1,6 +1,7 @@
 headers = sys/socket.h sys/errno.h netdb.h stdio.h string.h unistd.h stdlib.h netinet/in.h
 excludeDependentModules.osx = true
-
+// see samples/csvparser/src/main/c_interop/stdio.def for more details.
+excludedFunctions.osx = zopen add_profil pfctlinput profil unwhiteout
 ---
 
 static int interop_errno() {
