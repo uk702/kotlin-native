@@ -252,9 +252,14 @@ class ArenaContainer {
   // same operation could be used to place strings.
   ArrayHeader* PlaceArray(const TypeInfo* array_type_info, container_size_t count);
 
+  ObjHeader** getSlot();
+
  private:
   struct ContainerChunk {
     ContainerChunk* next;
+    // TODO: create instead fictitious object to store references into its fields.
+    ObjHeader* slots[10];
+    int slotsCount;
     // Then we have ContainerHeader here.
     ContainerHeader* asHeader() {
       return reinterpret_cast<ContainerHeader*>(this + 1);

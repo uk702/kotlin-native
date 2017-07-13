@@ -129,16 +129,6 @@ inline ObjHeader** asArenaSlot(ObjHeader** slot) {
       reinterpret_cast<uintptr_t>(slot) & ~ARENA_BIT);
 }
 
-inline container_size_t objectSize(const ObjHeader* obj) {
-  const TypeInfo* type_info = obj->type_info();
-  container_size_t size = type_info->instanceSize_ < 0 ?
-      // An array.
-      ArrayDataSizeBytes(obj->array()) + sizeof(ArrayHeader)
-      :
-      type_info->instanceSize_ + sizeof(ObjHeader);
-  return alignUp(size, kObjectAlignment);
-}
-
 #if USE_GC
 
 inline uint32_t hashOf(ContainerHeader* container) {
@@ -462,6 +452,7 @@ void ArenaContainer::Deinit() {
   while (chunk != nullptr) {
     // FreeContainer() doesn't release memory when CONTAINER_TAG_STACK is set.
     FreeContainer(chunk->asHeader());
+    ReleaseRefs(chunk->slots, chunk->slotsCount);
     chunk = chunk->next;
   }
   chunk = currentChunk_;
@@ -503,6 +494,20 @@ void* ArenaContainer::place(container_size_t size) {
   current_ += size;
   RuntimeAssert(current_ <= end_, "Must not overflow");
   return result;
+}
+
+ObjHeader** ArenaContainer::getSlot() {
+  auto chunk = currentChunk_;
+  while (chunk != nullptr) {
+    if (chunk->slotsCount < ARRAY_SIZE(chunk->slots)) {
+      return &chunk->slots[chunk->slotsCount++];
+    }
+    chunk = chunk->next;
+  }
+  if (!allocContainer(1024)) {
+    return nullptr;
+  }
+  return &currentChunk_->slots[currentChunk_->slotsCount++];
 }
 
 ObjHeader* ArenaContainer::PlaceObject(const TypeInfo* type_info) {
@@ -687,7 +692,11 @@ void SetRef(ObjHeader** location, const ObjHeader* object) {
 }
 
 void UpdateReturnRef(ObjHeader** returnSlot, const ObjHeader* object) {
-  if (isArenaSlot(returnSlot)) return;
+  if (isArenaSlot(returnSlot)) {
+    // TODO: do not even call this function if object itself is allocated in an arena.
+    auto arena = initedArena(asArenaSlot(returnSlot));
+    returnSlot = arena->getSlot();
+  }
   ObjHeader* old = *returnSlot;
 #if TRACE_MEMORY
   fprintf(stderr, "UpdateReturnRef *%p: %p -> %p\n", returnSlot, old, object);

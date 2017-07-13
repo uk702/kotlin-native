@@ -21,4 +21,6 @@
 #define RUNTIME_CONST __attribute__((const))
 #define RUNTIME_PURE __attribute__((pure))
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
 #endif // RUNTIME_COMMON_H

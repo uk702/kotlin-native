@@ -48,7 +48,7 @@ import org.jetbrains.kotlin.types.typeUtil.*
 import java.nio.charset.StandardCharsets
 import java.util.*
 
-private val DEBUG = 0
+private val DEBUG = 1
 
 // Roles in which particular object reference is being used. Lifetime is computed from
 // all roles reference.
