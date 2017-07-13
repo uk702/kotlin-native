@@ -5,17 +5,15 @@
 //}
 
 
-fun main(args: Array<String>) {
-    val a = Array<Int>(100000, { 0 })
-
-//    var sum = 0
-//    for (b in a) {
-//        sum += b
-//    }
-//
-//    println(sum)
+fun box(): String {
+    val s = Array<String>(1, { "" })
+    s[0] += "Z"
+    return s[0]
 }
 
+fun main(args: Array<String>) {
+    println(box())
+}
 
 ////class Z(val x: Int) {
 ////    override fun toString(): String {

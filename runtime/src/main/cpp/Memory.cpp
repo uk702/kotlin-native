@@ -34,7 +34,7 @@
 // Not recommended for low-end embedded targets.
 #define OPTIMIZE_GC 1
 // Define to 1 to print all memory operations.
-#define TRACE_MEMORY 1
+#define TRACE_MEMORY 0
 // Trace garbage collection phases.
 #define TRACE_GC_PHASES 0
 
@@ -753,7 +753,6 @@ void ReleaseRefs(ObjHeader** start, int count) {
 
 #if USE_GC
 void GarbageCollect() {
-  printf("Garbage collect\n");
   MemoryState* state = memoryState;
   RuntimeAssert(state->toFree != nullptr, "GC must not be stopped");
   RuntimeAssert(!state->gcInProgress, "Recursive GC is disallowed");

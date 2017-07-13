@@ -46,39 +46,21 @@ import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.*
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
 import java.util.*
 
-private val DEBUG = 1
+private val DEBUG = 0
 
 // Roles in which particular object reference is being used. Lifetime is computed from
 // all roles reference.
 private enum class Role {
-    // If reference is created as call result.
-    //CALL_RESULT,
-    // If reference is created as allocation call result.
-    //ALLOC_RESULT,
     // If reference is being returned.
     RETURN_VALUE,
     // If reference is being thrown.
     THROW_VALUE,
-    // If reference's field is being read.
-    //FIELD_READ,
     // If reference's field is being written to.
     FIELD_WRITTEN,
-    // If reference is being read from the field.
-    //READ_FROM_FIELD,
-    // If reference is being written to the field.
-    //WRITTEN_TO_FIELD,
-    // If reference is being read from the global.
-    //READ_FROM_GLOBAL,
     // If reference is being written to the global.
-    WRITTEN_TO_GLOBAL,
-    WRITTEN_TO_RETURN_VALUE,
-    // Outgoing call argument.
-    //CALL_ARGUMENT
+    WRITTEN_TO_GLOBAL
 }
 
 private class RoleInfoEntry(val data: Any? = null)
@@ -123,11 +105,6 @@ private class Roles {
         }
         return builder.toString()
     }
-}
-
-
-private interface UniqueVariable {
-    val owner: FunctionDescriptor
 }
 
 internal class VariableValues {
@@ -190,63 +167,43 @@ private class ParameterRoles {
     }
 }
 
-private class Qzz(val returnableBlockValues: Map<IrReturnableBlock, List<IrExpression>>,
-                  val suspendableExpressionValues: Map<IrSuspendableExpression, List<IrSuspensionPoint>>,
-                  val variableValues: VariableValues, val useVarValues: Boolean) {
+private class ExpressionValuesExtractor(val returnableBlockValues: Map<IrReturnableBlock, List<IrExpression>>,
+                                        val suspendableExpressionValues: Map<IrSuspendableExpression, List<IrSuspensionPoint>>) {
 
-    fun zzz(expression: IrExpression): List<Any> {
-        val values = mutableListOf<IrExpression>()
-        zzz(expression, values)
-        return values.map {
-            if (it is IrGetValue && it.descriptor is ParameterDescriptor)
-                it.descriptor
-            else it
-        }
-    }
-
-    private fun zzz(expression: IrExpression, values: MutableList<IrExpression>) {
+    fun forEachValue(expression: IrExpression, block: (IrExpression) -> Unit) {
         if (expression.type.isUnit() || expression.type.isNothing()) return
         when (expression) {
-            is IrReturnableBlock -> returnableBlockValues[expression]!!.forEach { zzz(it, values) }
+            is IrReturnableBlock -> returnableBlockValues[expression]!!.forEach { forEachValue(it, block) }
 
             is IrSuspendableExpression ->
-                (suspendableExpressionValues[expression]!! + expression.result).forEach { zzz(it, values) }
+                (suspendableExpressionValues[expression]!! + expression.result).forEach { forEachValue(it, block) }
 
             is IrSuspensionPoint -> {
-                zzz(expression.result, values)
-                zzz(expression.resumeResult, values)
+                forEachValue(expression.result, block)
+                forEachValue(expression.resumeResult, block)
             }
 
-            is IrContainerExpression -> zzz(expression.statements.last() as IrExpression, values)
+            is IrContainerExpression -> forEachValue(expression.statements.last() as IrExpression, block)
 
-            is IrWhen -> expression.branches.forEach { zzz(it.result, values) }
+            is IrWhen -> expression.branches.forEach { forEachValue(it.result, block) }
 
-            is IrMemberAccessExpression -> values += expression
+            is IrMemberAccessExpression -> block(expression)
 
-            is IrGetValue -> {
-                val descriptor = expression.descriptor
-                if (descriptor is ParameterDescriptor)
-                    values += expression
-                else {
-                    descriptor as VariableDescriptor
-                    if (useVarValues)
-                        variableValues.get(descriptor)?.forEach { values += it }
-                }
-            }
+            is IrGetValue -> block(expression)
 
-            is IrGetField -> values += expression //expression.receiver?.let { zzz(it) }
+            is IrGetField -> block(expression)
 
             is IrVararg -> /* Sometimes, we keep vararg till codegen phase (for constant arrays). */
-                values += expression
+                block(expression)
 
-            // If constant plays certain role - this information is useless.
+        // If constant plays certain role - this information is useless.
             is IrConst<*> -> { }
 
             is IrTypeOperatorCall -> {
                 when (expression.operator) {
                     IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.CAST ->
-                        zzz(expression.argument, values)
-                    // No info from those ones.
+                        forEachValue(expression.argument, block)
+                // No info from those ones.
                     IrTypeOperator.INSTANCEOF, IrTypeOperator.NOT_INSTANCEOF,
                     IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> { }
                     else -> TODO(ir2string(expression))
@@ -254,7 +211,7 @@ private class Qzz(val returnableBlockValues: Map<IrReturnableBlock, List<IrExpre
             }
 
             is IrTry ->
-                (expression.catches.map { it.result } + expression.tryResult).forEach { zzz(it, values) }
+                (expression.catches.map { it.result } + expression.tryResult).forEach { forEachValue(it, block) }
 
             is IrGetObjectValue -> { /* Shall we do anything here? */ }
 
@@ -263,14 +220,32 @@ private class Qzz(val returnableBlockValues: Map<IrReturnableBlock, List<IrExpre
     }
 }
 
+private fun ExpressionValuesExtractor.extractNodesUsingVariableValues(expression: IrExpression,
+                                                                      variableValues: VariableValues?): List<Any> {
+    val values = mutableListOf<Any>()
+    forEachValue(expression) {
+        if (it !is IrGetValue)
+            values += it
+        else {
+            val descriptor = it.descriptor
+            if (descriptor is ParameterDescriptor)
+                values += it.descriptor
+            else {
+                descriptor as VariableDescriptor
+                variableValues?.get(descriptor)?.forEach { values += it }
+            }
+        }
+    }
+    return values
+}
+
 private class FunctionAnalysisResult(val function: IrFunction,
                                      val expressionToRoles: MutableMap<IrExpression, Roles>,
                                      val variableValues: VariableValues,
                                      val parameterRoles: ParameterRoles)
 
 private class IntraproceduralAnalysisResult(val functionAnalysisResults: Map<FunctionDescriptor, FunctionAnalysisResult>,
-                                            val returnableBlockValues: Map<IrReturnableBlock, List<IrExpression>>,
-                                            val suspendableExpressionValues: Map<IrSuspendableExpression, List<IrSuspensionPoint>>)
+                                            val expressionValuesExtractor: ExpressionValuesExtractor)
 
 private class IntraproceduralAnalysis(val context: RuntimeAware) {
 
@@ -279,6 +254,8 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
 
     // All suspension points within specified suspendable expression.
     private val suspendableExpressionValues = mutableMapOf<IrSuspendableExpression, MutableList<IrSuspensionPoint>>()
+
+    private val expressionValuesExtractor = ExpressionValuesExtractor(returnableBlockValues, suspendableExpressionValues)
 
     private fun isInteresting(expression: IrExpression) =
             (expression is IrMemberAccessExpression && context.isInteresting(expression.type))
@@ -367,7 +344,7 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
             }
         }, data = null)
 
-        return IntraproceduralAnalysisResult(result, returnableBlockValues, suspendableExpressionValues)
+        return IntraproceduralAnalysisResult(result, expressionValuesExtractor)
     }
 
     private inner class ElementFinderVisitor : IrElementVisitorVoid {
@@ -438,7 +415,6 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
         val expressionRoles = functionAnalysisResult.expressionToRoles
         val variableValues = functionAnalysisResult.variableValues
         val parameterRoles = functionAnalysisResult.parameterRoles
-        val qzz = Qzz(returnableBlockValues, suspendableExpressionValues, variableValues, useVarValues)
 
         private fun assignExpressionRole(expression: IrExpression, role: Role, infoEntry: RoleInfoEntry?) {
             if (!useVarValues)
@@ -466,98 +442,17 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
         // Here we handle variable assignment.
         private fun assignVariable(variable: VariableDescriptor, value: IrExpression) {
             if (useVarValues) return
-            // Sometimes we can assign value to Unit variable (unit4.kt) - we don't care.
-            if (value.type.isUnit() || value.type.isNothing()) return
-            when (value) {
-                is IrReturnableBlock -> returnableBlockValues[value]!!.forEach { assignVariable(variable, it) }
-
-                is IrSuspendableExpression ->
-                    (suspendableExpressionValues[value]!! + value.result).forEach { assignVariable(variable, it) }
-
-                is IrSuspensionPoint -> {
-                    assignVariable(variable, value.result)
-                    assignVariable(variable, value.resumeResult)
-                }
-
-                is IrContainerExpression -> assignVariable(variable, value.statements.last() as IrExpression)
-
-                is IrWhen -> value.branches.forEach { assignVariable(variable, it.result) }
-
-                is IrMemberAccessExpression -> variableValues.add(variable, value)
-
-                is IrGetValue -> variableValues.add(variable, value)
-
-                is IrGetField -> variableValues.add(variable, value)//value.receiver?.let { assignVariable(variable, it) } //variableValues.add(variable, value)
-
-                is IrVararg -> /* Sometimes, we keep vararg till codegen phase (for constant arrays). */
-                    variableValues.add(variable, value)
-
-                is IrConst<*> -> { }
-
-                is IrTypeOperatorCall -> {
-                    when (value.operator) {
-                        IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.CAST ->
-                            assignVariable(variable, value.argument)
-                        else -> TODO(ir2string(value))
-                    }
-                }
-
-                is IrTry ->
-                    (value.catches.map { it.result } + value.tryResult).forEach { assignVariable(variable, it) }
-
-                is IrGetObjectValue -> { }
-
-                else -> TODO(ir2string(value))
+            expressionValuesExtractor.forEachValue(value) {
+                variableValues.add(variable, it)
             }
         }
 
         // Here we assign a role to expression's value.
         private fun assignRole(expression: IrExpression, role: Role, infoEntry: RoleInfoEntry?) {
-            if (expression.type.isUnit() || expression.type.isNothing()) return
-            when (expression) {
-                is IrReturnableBlock -> returnableBlockValues[expression]!!.forEach { assignRole(it, role, infoEntry) }
-
-                is IrSuspendableExpression ->
-                    (suspendableExpressionValues[expression]!! + expression.result).forEach { assignRole(it, role, infoEntry) }
-
-                is IrSuspensionPoint -> {
-                    assignRole(expression.result, role, infoEntry)
-                    assignRole(expression.resumeResult, role, infoEntry)
-                }
-
-                is IrContainerExpression -> assignRole(expression.statements.last() as IrExpression, role, infoEntry)
-
-                is IrWhen -> expression.branches.forEach { assignRole(it.result, role, infoEntry) }
-
-                is IrMemberAccessExpression -> assignExpressionRole(expression, role, infoEntry)
-
-                is IrGetValue -> assignValueRole(expression.descriptor, role, infoEntry)
-
-                is IrGetField -> assignExpressionRole(expression, role, infoEntry)//expression.receiver?.let { assignExpressionRole(expression, role, infoEntry) }
-
-                is IrVararg -> /* Sometimes, we keep vararg till codegen phase (for constant arrays). */
-                    assignExpressionRole(expression, role, infoEntry)
-
-                // If constant plays certain role - this information is useless.
-                is IrConst<*> -> {}
-
-                is IrTypeOperatorCall -> {
-                    when (expression.operator) {
-                        IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.CAST ->
-                            assignRole(expression.argument, role, infoEntry)
-                        // No info from those ones.
-                        IrTypeOperator.INSTANCEOF, IrTypeOperator.NOT_INSTANCEOF,
-                        IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> {}
-                        else -> TODO(ir2string(expression))
-                    }
-                }
-
-                is IrTry ->
-                    (expression.catches.map { it.result } + expression.tryResult).forEach { assignRole(it, role, infoEntry) }
-
-                is IrGetObjectValue -> { /* Shall we do anything here? */ }
-
-                else -> TODO(ir2string(expression))
+            expressionValuesExtractor.forEachValue(expression) {
+                if (it is IrGetValue)
+                    assignValueRole(it.descriptor, role, infoEntry)
+                else assignExpressionRole(it, role, infoEntry)
             }
         }
 
@@ -569,10 +464,11 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
             if (expression.receiver == null)
                 assignRole(expression.value, Role.WRITTEN_TO_GLOBAL, RoleInfoEntry(expression))
             else {
-                // TODO: do we need this?
-                // assignRole(expression.value, Role.WRITTEN_TO_FIELD, RoleInfoEntry(expression))
-                val values = qzz.zzz(expression.value)
-                values.forEach { assignRole(expression.receiver!!, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
+                val nodes = expressionValuesExtractor.extractNodesUsingVariableValues(
+                        expression.value,
+                        if (useVarValues) variableValues else null
+                )
+                nodes.forEach { assignRole(expression.receiver!!, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
             }
             super.visitSetField(expression)
         }
@@ -580,8 +476,11 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
         override fun visitGetField(expression: IrGetField) {
             expression.receiver?.let {
                 assignRole(it, Role.FIELD_WRITTEN, RoleInfoEntry(expression))
-                val values = qzz.zzz(it)
-                values.forEach { assignRole(expression, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
+                val nodes = expressionValuesExtractor.extractNodesUsingVariableValues(
+                        it,
+                        if (useVarValues) variableValues else null
+                )
+                nodes.forEach { assignRole(expression, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
             }
             super.visitGetField(expression)
         }
@@ -628,14 +527,18 @@ private class IntraproceduralAnalysis(val context: RuntimeAware) {
             expression.elements.forEach {
                 when (it) {
                     is IrExpression -> {
-                        //assignExpressionRole(it, Role.WRITTEN_TO_FIELD, RoleInfoEntry(expression))
-                        val values = qzz.zzz(it)
-                        values.forEach { assignRole(expression, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
+                        val nodes = expressionValuesExtractor.extractNodesUsingVariableValues(
+                                it,
+                                if (useVarValues) variableValues else null
+                        )
+                        nodes.forEach { assignRole(expression, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
                     }
                     is IrSpreadElement -> {
-                        //assignExpressionRole(it.expression, Role.WRITTEN_TO_FIELD, RoleInfoEntry(expression))
-                        val values = qzz.zzz(it.expression)
-                        values.forEach { assignRole(expression, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
+                        val nodes = expressionValuesExtractor.extractNodesUsingVariableValues(
+                                it.expression,
+                                if (useVarValues) variableValues else null
+                        )
+                        nodes.forEach { assignRole(expression, Role.FIELD_WRITTEN, RoleInfoEntry(it)) }
                     }
                     else -> TODO("Unsupported vararg element")
                 }
@@ -716,6 +619,8 @@ private class InterproceduralAnalysis(val context: Context,
                                       val externalFunctionEAResults: Map<String, FunctionEAResult>,
                                       val intraproceduralAnalysisResult: IntraproceduralAnalysisResult,
                                       val lifetimes: MutableMap<IrElement, Lifetime>) {
+
+    private val expressionValuesExtractor = intraproceduralAnalysisResult.expressionValuesExtractor
 
     private class CallGraphNode {
         val callSites = mutableListOf<IrMemberAccessExpression>()
@@ -967,12 +872,10 @@ private class InterproceduralAnalysis(val context: Context,
                         println("A virtual call")
 
                     // Try devirtualize.
-                    val dispatchReceiver = callSite.dispatchReceiver!!
-                    val qzz = Qzz(intraproceduralAnalysisResult.returnableBlockValues,
-                            intraproceduralAnalysisResult.suspendableExpressionValues,
-                            intraproceduralAnalysisResult.functionAnalysisResults[caller]!!.variableValues, true)
-
-                    val possibleReceivers = qzz.zzz(dispatchReceiver)
+                    val possibleReceivers = expressionValuesExtractor.extractNodesUsingVariableValues(
+                            callSite.dispatchReceiver!!,
+                            intraproceduralAnalysisResult.functionAnalysisResults[caller]!!.variableValues
+                    )
                     val possibleReceiverTypes = possibleReceivers
                             .map { (it as? ParameterDescriptor)?.type ?: (it as IrExpression).type }
                             .map { it.erasure() }
@@ -1117,10 +1020,6 @@ private class InterproceduralAnalysis(val context: Context,
             }
         }
 
-        private val qzz = Qzz(intraproceduralAnalysisResult.returnableBlockValues,
-                intraproceduralAnalysisResult.suspendableExpressionValues,
-                intraproceduralAnalysisResult.functionAnalysisResults[function]!!.variableValues, true)
-
         init {
             val functionAnalysisResult = intraproceduralAnalysisResult.functionAnalysisResults[function]!!
             if (DEBUG > 0) {
@@ -1195,19 +1094,25 @@ private class InterproceduralAnalysis(val context: Context,
                     (0..arguments.size).map {
                         val thiz = IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET,
                                 (function as ConstructorDescriptor).constructedClass.thisAsReceiverParameter)
-                        val expression = if (it == 0) thiz else arguments[it - 1].second
-                        qzz.zzz(expression)
+                        expressionValuesExtractor.extractNodesUsingVariableValues(
+                                if (it == 0) thiz else arguments[it - 1].second,
+                                intraproceduralAnalysisResult.functionAnalysisResults[function]!!.variableValues
+                        )
                     }
                 } else {
                     (0..arguments.size).map {
-                        val expression = if (it == 0) callSite else arguments[it - 1].second
-                        qzz.zzz(expression)
+                        expressionValuesExtractor.extractNodesUsingVariableValues(
+                                if (it == 0) callSite else arguments[it - 1].second,
+                                intraproceduralAnalysisResult.functionAnalysisResults[function]!!.variableValues
+                        )
                     }
                 }
             } else {
                 (0..arguments.size).map {
-                    val expression = if (it < arguments.size) arguments[it].second else callSite
-                    qzz.zzz(expression)
+                    expressionValuesExtractor.extractNodesUsingVariableValues(
+                            if (it < arguments.size) arguments[it].second else callSite,
+                            intraproceduralAnalysisResult.functionAnalysisResults[function]!!.variableValues
+                    )
                 }
             }
             for (index in 0..callee.allParameters.size) {
@@ -1345,7 +1250,6 @@ internal fun computeLifetimes(irModule: IrModuleFragment, context: Context, runt
         if (libraryEscapeAnalysis != null) {
             println("Escape analysis size for lib '${library.libraryName}': ${libraryEscapeAnalysis.size}")
             val lines = libraryEscapeAnalysis.toString(StandardCharsets.US_ASCII).split('\r', '\n')
-            //val lines = Files.readAllLines(Paths.get("stdlib.ea"), StandardCharsets.US_ASCII)
             for (i in lines.indices step 2) {
                 val functionName = lines[i]
                 if (functionName == "") break
@@ -1390,9 +1294,5 @@ internal fun computeLifetimes(irModule: IrModuleFragment, context: Context, runt
             context.escapeAnalysisResults = outputBytes
         else
             context.escapeAnalysisResults = ((context.escapeAnalysisResults!!.asList() + outputBytes) as List<Byte>).toByteArray()
-//        if (Files.exists(Paths.get("stdlib.ea")))
-//            Files.write(Paths.get("stdlib.ea"), listOf(output.toString()), StandardCharsets.US_ASCII, StandardOpenOption.APPEND)
-//        else Files.write(Paths.get("stdlib.ea"), listOf(output.toString()), StandardCharsets.US_ASCII)
     }
-
 }
