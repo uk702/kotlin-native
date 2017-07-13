@@ -16,43 +16,46 @@ fun <T> handleResultContinuation(x: (T) -> Unit): Continuation<T> = object: Cont
     override fun resume(data: T) = x(data)
 }
 
+class Controller {
+    var result = ""
+
+    suspend fun <T> suspendAndLog(value: T): T = suspendCoroutineOrReturn { c ->
+        result += "suspend($value);"
+        c.resume(value)
+        COROUTINE_SUSPENDED
+    }
+}
+
+fun builder(c: suspend Controller.() -> Unit): String {
+    val controller = Controller()
+    c.startCoroutine(controller, object : Continuation<Unit> {
+        override val context = EmptyCoroutineContext
+
+        override fun resume(data: Unit) {}
+
+        override fun resumeWithException(exception: Throwable) {
+            controller.result += "ignoreCaught(${exception.message});"
+        }
+    })
+    return controller.result
+}
+
 fun box(): String {
-    var result = 0
-
-    builder {
-        result = factorial(4)
+    val value = builder {
+        try {
+            suspendAndLog("before")
+            throw RuntimeException("foo")
+        } catch (e: RuntimeException) {
+            result += "caught(${e.message});"
+        }
+        suspendAndLog("after")
     }
-
-    while (postponed != null) {
-        postponed!!()
+    if (value != "suspend(before);caught(foo);suspend(after);") {
+        return "fail: $value"
     }
-
-    if (result != 24) return "fail1: $result"
-    if (log != "1;1;2;6;24;") return "fail2: $log"
 
     return "OK"
 }
-
-suspend fun factorial(a: Int): Int = if (a > 0) suspendHere(factorial(a - 1) * a) else suspendHere(1)
-
-suspend fun suspendHere(value: Int): Int = suspendCoroutineOrReturn { x ->
-    postponed = {
-        log += "$value;"
-        x.resume(value)
-    }
-    COROUTINE_SUSPENDED
-}
-
-fun builder(c: suspend () -> Unit) {
-    c.startCoroutine(handleResultContinuation {
-        postponed = null
-    })
-}
-
-var postponed: (() -> Unit)? = { }
-
-var log = ""
-
 
 //fun box(): String {
 //    val s = Array<String>(1, { "" })

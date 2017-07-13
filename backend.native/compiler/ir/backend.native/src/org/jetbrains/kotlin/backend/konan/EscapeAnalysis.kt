@@ -48,7 +48,7 @@ import org.jetbrains.kotlin.types.typeUtil.*
 import java.nio.charset.StandardCharsets
 import java.util.*
 
-private val DEBUG = 1
+private val DEBUG = 0
 
 // Roles in which particular object reference is being used. Lifetime is computed from
 // all roles reference.
@@ -629,8 +629,7 @@ private class InterproceduralAnalysis(val context: Context,
 
     private class MultiNode(val nodes: Set<FunctionDescriptor>)
 
-    private class CallGraphCondensation(val multiNodes: Map<FunctionDescriptor, MultiNode>,
-                                        val topologicalOrder: List<FunctionDescriptor>)
+    private class CallGraphCondensation(val topologicalOrder: List<MultiNode>)
 
     private class CallGraph(val directEdges: Map<FunctionDescriptor, CallGraphNode>,
                             val reversedEdges: Map<FunctionDescriptor, List<FunctionDescriptor>>) {
@@ -638,6 +637,9 @@ private class InterproceduralAnalysis(val context: Context,
         private inner class CondensationBuilder {
             private val visited = mutableSetOf<FunctionDescriptor>()
             private val order = mutableListOf<FunctionDescriptor>()
+            private val nodeToMultiNodeMap = mutableMapOf<FunctionDescriptor, MultiNode>()
+            private val multiNodesOrder = mutableListOf<MultiNode>()
+
 
             fun build(): CallGraphCondensation {
                 // First phase.
@@ -657,11 +659,17 @@ private class InterproceduralAnalysis(val context: Context,
                     }
                 }
 
-                val nodeToMultiNodeMap = mutableMapOf<FunctionDescriptor, MultiNode>()
+                // Third phase.
                 multiNodes.forEach { multiNode ->
                     multiNode.nodes.forEach { nodeToMultiNodeMap.put(it, multiNode) }
                 }
-                return CallGraphCondensation(nodeToMultiNodeMap, order)
+                visited.clear()
+                multiNodes.forEach {
+                    if (!visited.contains(it.nodes.first()))
+                        findMultiNodesOrder(it)
+                }
+
+                return CallGraphCondensation(multiNodesOrder)
             }
 
             private fun findOrder(node: FunctionDescriptor) {
@@ -681,6 +689,18 @@ private class InterproceduralAnalysis(val context: Context,
                     if (!visited.contains(it))
                         paint(it, multiNode)
                 }
+            }
+
+            private fun findMultiNodesOrder(node: MultiNode) {
+                visited.addAll(node.nodes)
+                node.nodes.forEach {
+                    directEdges[it]!!.callSites.forEach {
+                        val callee = it.descriptor.original as FunctionDescriptor
+                        if (directEdges.containsKey(callee) && !visited.contains(callee))
+                            findMultiNodesOrder(nodeToMultiNodeMap[callee]!!)
+                    }
+                }
+                multiNodesOrder += node
             }
         }
 
@@ -728,14 +748,35 @@ private class InterproceduralAnalysis(val context: Context,
     fun analyze(element: IrElement): InterproceduralAnalysisResult {
         val callGraph = buildCallGraph(element)
         if (DEBUG > 0) {
+            println("CALL GRAPH")
             callGraph.directEdges.forEach { t, u ->
-                println("FUN $t")
+                println("    FUN $t")
                 u.callSites.forEach {
-                    println("    CALLS ${if (callGraph.directEdges.containsKey(it.descriptor.original)) "LOCAL" else "EXTERNAL"} ${it.descriptor}")
+                    println("        CALLS ${if (callGraph.directEdges.containsKey(it.descriptor.original)) "LOCAL" else "EXTERNAL"} ${it.descriptor}")
+                }
+                callGraph.reversedEdges[t]!!.forEach {
+                    println("        CALLED BY $it")
                 }
             }
         }
+
         val condensation = callGraph.buildCondensation()
+        if (DEBUG > 0) {
+            println("CONDENSATION")
+            condensation.topologicalOrder.forEach { multiNode ->
+                println("    MULTI-NODE")
+                multiNode.nodes.forEach {
+                    println("        $it")
+                    callGraph.directEdges[it]!!.callSites
+                            .filter { callGraph.directEdges.containsKey(it.descriptor.original) }
+                            .forEach { println("            CALLS ${it.descriptor}") }
+                    callGraph.reversedEdges[it]!!.forEach {
+                        println("            CALLED BY $it")
+                    }
+                }
+            }
+        }
+
         callGraph.directEdges.forEach { function, node ->
             val parameters = function.allParameters
             node.escapeAnalysisResult = FunctionEAResult(
@@ -746,10 +787,9 @@ private class InterproceduralAnalysis(val context: Context,
                             ).toTypedArray()
             )
         }
+
         val visited = mutableSetOf<FunctionDescriptor>()
-        condensation.topologicalOrder.forEach {
-            if (visited.contains(it)) return@forEach
-            val multiNode = condensation.multiNodes[it]!!
+        condensation.topologicalOrder.forEach { multiNode ->
             multiNode.nodes.forEach { visited += it }
             analyze(callGraph, multiNode)
         }
