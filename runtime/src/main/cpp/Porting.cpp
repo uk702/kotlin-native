@@ -62,9 +62,14 @@ void consoleErrorUtf8(const void* utf8, uint32_t sizeBytes) {
 }
 
 uint32_t consoleReadUtf8(void* utf8, uint32_t maxSizeBytes) {
+#ifdef KONAN_WASM
+  // TODO: So where exactly shoud we read from in javascript?
+  abort();
+#else
   char* result = ::fgets(reinterpret_cast<char*>(utf8), maxSizeBytes - 1, stdin);
   if (result == nullptr) return 0;
   return ::strlen(result);
+#endif
 }
 
 // Process execution.
@@ -76,7 +81,7 @@ void abort() {
 // memcpy/memmove are not here intentionally, as frequently implemented/optimized
 // by C compiler.
 void* memmem(const void *big, size_t bigLen, const void *little, size_t littleLen) {
-#if KONAN_WINDOWS
+#if KONAN_WINDOWS || KONAN_WASM
   for (size_t i = 0; i + littleLen <= bigLen; ++i) {
     void* pos = ((char*)big) + i;
     if (::memcmp(little, pos, littleLen) == 0) return pos;
@@ -139,9 +144,71 @@ uint64_t getTimeMicros() {
 
 #if KONAN_INTERNAL_DLMALLOC
 // This function is being called when memory allocator needs more RAM.
+
+#ifdef KONAN_WASM
+
+// This one is an interface to query module.env.memory.buffer.byteLength
+extern "C" long morecore_current_limit();
+
+#define MFAIL ((void*) ~(size_t)0)
+#define WASM_PAGESIZE  65536U
+#define WASM_PAGEMASK ((WASM_PAGESIZE-(size_t)1))
+
 void* moreCore(int size) {
-  return sbrk(size);
+    static void *sbrk_top = 0;
+
+    if (size == 0) {
+        return sbrk_top;
+    } else if (size < 0) {
+        return (void *) MFAIL;
+    }
+
+    size = (size + WASM_PAGEMASK) & ~(WASM_PAGEMASK);
+
+    sbrk_top = (char *) sbrk_top + size;
+    
+    if (((char*)sbrk_top - (char*)0) > morecore_current_limit()) {
+        // TODO: Consider using grow() and .maximum Memory settings.
+        abort();
+    }
+
+    return sbrk_top;
 }
+
+// dlmalloc wants to know the page size.
+long getpagesize() {
+    return WASM_PAGESIZE;
+}
+
+#else
+void* moreCore(int size) {
+    return sbrk(size);
+}
+
+long getpagesize() {
+    return sysconf(_SC_PAGESIZE);
+}
+#endif
 #endif
 
 }  // namespace konan
+
+extern "C" {
+#ifdef KONAN_WASM
+
+    // These are stubs to shut up wasm linkage issues.
+    void _ZNKSt3__220__vector_base_commonILb1EE20__throw_length_errorEv(void) {}
+    void _ZNKSt3__221__basic_string_commonILb1EE20__throw_length_errorEv(void) {}
+    void _ZNSt3__26chrono12steady_clock3nowEv(void) {}
+    int _ZNSt3__212__next_primeEm(int n) {
+        return n+2;
+    }
+    void __assert_fail(void) { abort(); }
+    void __errno_location(void) { }
+
+    void fmodf(void) {}
+    void fmod(void) {}
+
+#endif
+
+}
