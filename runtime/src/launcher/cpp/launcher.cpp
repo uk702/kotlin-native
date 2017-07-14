@@ -38,7 +38,7 @@ OBJ_GETTER(setupArgs, int argc, const char** argv) {
 //--- main --------------------------------------------------------------------//
 extern "C" KInt Konan_start(const ObjHeader*);
 
-#ifdef KONAN_WASM32
+#ifdef KONAN_WASM
 // No entry point selector for wasm32 for now. 
 // There is no linker.
 extern "C" int main(int argc, const char** argv) {
