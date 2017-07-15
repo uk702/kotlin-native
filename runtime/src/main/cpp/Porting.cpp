@@ -93,10 +93,19 @@ void* memmem(const void *big, size_t bigLen, const void *little, size_t littleLe
 
 }
 
+// The sprintf family.
+#if KONAN_INTERNAL_SNPRINTF
+extern "C" int rpl_vsnprintf(char *, size_t, const char *, va_list);
+#endif
+
 int snprintf(char* buffer, size_t size, const char* format, ...) {
   va_list args;
   va_start(args, format);
+#if KONAN_INTERNAL_SNPRINTF
+  int rv = rpl_vsnprintf(buffer, size, format, args);
+#else
   int rv = ::vsnprintf(buffer, size, format, args);
+#endif
   va_end(args);
   return rv;
 }

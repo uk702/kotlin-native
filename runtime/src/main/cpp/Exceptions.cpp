@@ -105,7 +105,7 @@ _Unwind_Reason_Code unwindCallback(
   }
 
   char line[512];
-  snprintf(line, sizeof(line) - 1, "%s (%p)",
+  konan::snprintf(line, sizeof(line) - 1, "%s (%p)",
     symbol, (void*)(intptr_t)address);
   backtrace->setNextElement(line);
   return _URC_NO_REASON;
