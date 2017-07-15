@@ -162,6 +162,7 @@ void ThrowException(KRef exception) {
   RuntimeAssert(exception != nullptr && IsInstance(exception, theThrowableTypeInfo),
                 "Throwing something non-throwable");
 #if KONAN_NO_EXCEPTIONS
+  PrintThrowable(exception);
   RuntimeAssert(false, "Exceptions unsupported");
 #else
 #if (__MINGW32__ || __MINGW64__)

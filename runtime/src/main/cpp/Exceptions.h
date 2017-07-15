@@ -44,6 +44,10 @@ void ThrowArithmeticException();
 void ThrowNumberFormatException();
 // Throws out of memory error.
 void ThrowOutOfMemoryError();
+#if KONAN_NO_EXCEPTIONS
+// Prints out mesage of Throwable.
+void PrintThrowable(KRef);
+#endif
 
 #ifdef __cplusplus
 } // extern "C"
