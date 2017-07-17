@@ -1,0 +1,13 @@
+apply plugin: 'konan'
+
+konanInterop {
+    objc { }
+}
+
+
+konanArtifacts {
+    Window {
+        useInterop 'objc'
+        target "macbook"
+    }
+}

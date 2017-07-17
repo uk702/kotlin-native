@@ -324,6 +324,13 @@ private fun downloadDependencies(dependenciesRoot: String, target: String, konan
     maybeExecuteHelper(dependenciesRoot, konanProperties, dependencyList)
 }
 
+private fun selectNativeLanguage(config: Properties): Language =
+        if (config.getProperty("objectiveC")?.toBoolean() == true) {
+            Language.OBJECTIVE_C
+        } else {
+            Language.C
+        }
+
 private fun processLib(konanHome: String,
                        substitutions: Map<String, String>,
                        args: Map<String, List<String>>) {
@@ -363,9 +370,17 @@ private fun processLib(konanHome: String,
 
     val defaultOpts = konanProperties.defaultCompilerOpts(target, dependencies)
     val headerFiles = config.getSpaceSeparated("headers") + additionalHeaders
-    val compilerOpts = config.getSpaceSeparated("compilerOpts") + defaultOpts + additionalCompilerOpts
+    val language = selectNativeLanguage(config)
+    val compilerOpts: List<String> = mutableListOf<String>().apply {
+        addAll(config.getSpaceSeparated("compilerOpts"))
+        addAll(defaultOpts)
+        addAll(additionalCompilerOpts)
+        addAll(when (language) {
+            Language.C -> emptyList()
+            Language.OBJECTIVE_C -> listOf("-fobjc-arc")
+        })
+    }
     val compiler = "clang"
-    val language = Language.C
     val excludeSystemLibs = config.getProperty("excludeSystemLibs")?.toBoolean() ?: false
     val excludeDependentModules = config.getProperty("excludeDependentModules")?.toBoolean() ?: false
 
@@ -422,7 +437,7 @@ private fun processLib(konanHome: String,
     outKtFile.parentFile.mkdirs()
 
     File(nativeLibsDir).mkdirs()
-    val outCFile = File("$nativeLibsDir/$libName.c") // TODO: select the better location.
+    val outCFile = File("$nativeLibsDir/$libName.${language.sourceFileExtension}") // TODO: select the better location.
 
     outKtFile.bufferedWriter().use { ktFile ->
         outCFile.bufferedWriter().use { cFile ->

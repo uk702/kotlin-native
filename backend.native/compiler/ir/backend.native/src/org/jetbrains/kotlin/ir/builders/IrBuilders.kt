@@ -41,10 +41,6 @@ fun IrBuilderWithScope.irTrue() = IrConstImpl.boolean(startOffset, endOffset, co
 
 fun IrBuilderWithScope.irFalse() = IrConstImpl.boolean(startOffset, endOffset, context.builtIns.booleanType, false)
 
-fun IrBuilderWithScope.irCall(symbol: IrFunctionSymbol): IrCallImpl {
-    return IrCallImpl(this.startOffset, this.endOffset, symbol)
-}
-
 fun IrBuilderWithScope.irCall(symbol: IrFunctionSymbol, typeArguments: Map<TypeParameterDescriptor, KotlinType>) =
         IrCallImpl(this.startOffset, this.endOffset, symbol, symbol.descriptor.substitute(typeArguments), typeArguments)
 
@@ -52,7 +48,7 @@ fun IrBuilderWithScope.irCall(symbol: IrFunctionSymbol, typeArguments: List<Kotl
     irCall(symbol, symbol.descriptor.typeParameters.zip(typeArguments).toMap())
 
 fun IrBuilderWithScope.irGetObject(classSymbol: IrClassSymbol) =
-        IrGetObjectValueImpl(startOffset, endOffset, classSymbol.owner.defaultType, classSymbol)
+        IrGetObjectValueImpl(startOffset, endOffset, classSymbol.descriptor.defaultType, classSymbol)
 
 fun IrBuilderWithScope.irGetField(receiver: IrExpression?, symbol: IrFieldSymbol) =
         IrGetFieldImpl(startOffset, endOffset, symbol, receiver)

@@ -139,6 +139,12 @@ open class IrBuildingTransformer(private val context: BackendContext) : IrElemen
             return super.visitAnonymousInitializer(declaration)
         }
     }
+
+    override fun visitEnumEntry(declaration: IrEnumEntry): IrStatement {
+        withBuilder(declaration.symbol) {
+            return super.visitEnumEntry(declaration)
+        }
+    }
 }
 
 fun computeOverrides(current: ClassDescriptor, functionsFromCurrent: List<CallableMemberDescriptor>): List<DeclarationDescriptor> {

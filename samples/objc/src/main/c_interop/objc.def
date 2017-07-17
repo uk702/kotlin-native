@@ -1,0 +1,4 @@
+headers = Foundation/Foundation.h Cocoa/Cocoa.h AppKit/NSApplication.h AppKit/NSWindow.h
+headerFilter = Foundation/** Cocoa/** AppKit/**
+objectiveC = true
+linkerOpts = -framework AppKit
