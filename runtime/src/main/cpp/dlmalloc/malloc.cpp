@@ -529,6 +529,8 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #define USE_LOCKS 0
 #define LACKS_TIME_H 1
 #define NO_MALLOC_STATS 1
+#define HAVE_MMAP 0 // don't try to allocate large chunks of memory using mmap(). 
+                    // It will go to malloc->calloc->sbrk->morecore chain anyways.
 #else 
 #define USE_LOCKS 1
 #endif
