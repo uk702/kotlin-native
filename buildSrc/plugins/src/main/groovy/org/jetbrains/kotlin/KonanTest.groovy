@@ -45,10 +45,15 @@ abstract class KonanTest extends JavaExec {
     List<String> flags = null
 
     boolean enabled = true
+    boolean expectedFail = false
     boolean run = true
 
     void setDisabled(boolean value) {
         this.enabled = !value
+    }
+
+    void setExpectedFail(boolean value) {
+        this.expectedFail = value
     }
 
     // Uses directory defined in $outputSourceSetName source set.
@@ -239,16 +244,28 @@ fun handleExceptionContinuation(x: (Throwable) -> Unit): Continuation<Any?> = ob
 
         println(result)
 
-        if (execResult.exitValue != expectedExitStatus) {
-            //throw new TestFailedException(
-            println(
-                    "Test failed. Expected exit status: $expectedExitStatus, actual: ${execResult.exitValue}")
-        }
+        
+        def exitCodeMismatch = execResult.exitValue != expectedExitStatus
+        if (exitCodeMismatch) {
+            def message = "Expected exit status: $expectedExitStatus, actual: ${execResult.exitValue}"
+            if (this.expectedFail) {
+                println("Expected failure. $message")
+            } else {
+                throw new TestFailedException("Test failed. $message")
+            }
+        } 
+        
+        def goldValueMismatch = goldValue != null && goldValue != result.replace(System.lineSeparator(), "\n")
+        if (goldValueMismatch) {
+            def message = "Expected output: $goldValue, actual output: $result"
+            if (this.expectedFail) {
+                println("Expected failure. $message") 
+            } else {
+                throw new TestFailedException("Test failed. $message")
+            }
+        } 
 
-        if (goldValue != null && goldValue != result.replace(System.lineSeparator(), "\n")) {
-            println("Test failed. Expected output: $goldValue, actual output: $result")
-            //throw new TestFailedException("Test failed. Expected output: $goldValue, actual output: $result")
-        }
+        if (!exitCodeMismatch && !goldValueMismatch && this.expectedFail) println("Unexpected pass")
     }
     
     List<String> executionCommandLine(String exe) {
