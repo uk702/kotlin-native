@@ -374,7 +374,7 @@ task cast_simple(type: RunKonanTest) {
 }
 
 task cast_null(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Ok\n"
     source = "codegen/basics/cast_null.kt"
 }
@@ -391,7 +391,7 @@ task unchecked_cast2(type: RunKonanTest) {
 }
 
 task unchecked_cast3(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "Ok\n"
     source = "codegen/basics/unchecked_cast3.kt"
 }
@@ -410,14 +410,14 @@ task hello0(type: RunKonanTest) {
 }
 
 task hello1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "Hello World"
     testData = "Hello World"
     source = "runtime/basic/hello1.kt"
 }
 
 task hello2(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "you entered 'Hello World'"
     testData = "Hello World"
     source = "runtime/basic/hello2.kt"
@@ -429,7 +429,6 @@ task hello3(type: RunKonanTest) {
 }
 
 task hello4(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "Hello\nПока\n"
     source = "runtime/basic/hello4.kt"
 }
@@ -454,7 +453,7 @@ task entry2(type: LinkKonanTest) {
 }
 
 task tostring0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "127\n-1\n239\nA\nЁ\nト\n1122334455\n112233445566778899\n3.14159265358\n1.0E27\n1.0E-300\ntrue\nfalse\n"
     source = "runtime/basic/tostring0.kt"
 }
@@ -470,7 +469,7 @@ task tostring2(type: RunKonanTest) {
 }
 
 task tostring3(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "-128\n127\n-32768\n32767\n" +
             "-2147483648\n2147483647\n-9223372036854775808\n9223372036854775807\n" +
             "1.4E-45\n3.4028235E38\n-Infinity\nInfinity\n" +
@@ -486,19 +485,19 @@ task empty_substring(type: RunKonanTest) {
 }
 
 task worker0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "Got Input processed\nOK\n"
     source = "runtime/workers/worker0.kt"
 }
 
 task worker1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "OK\n"
     source = "runtime/workers/worker1.kt"
 }
 
 task worker2(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "OK\n"
     source = "runtime/workers/worker2.kt"
 }
@@ -529,7 +528,6 @@ task enum1(type: RunKonanTest) {
 }
 
 task enum_valueOf(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Test fails.
     goldValue = "E1\nE2\nE3\nE1\nE2\nE3\n"
     source = "codegen/enum/valueOf.kt"
 }
@@ -550,7 +548,6 @@ task enum_vCallWithEntryClass(type: RunKonanTest) {
 }
 
 task enum_companionObject(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Test fails.
     goldValue = "OK\n"
     source = "codegen/enum/companionObject.kt"
 }
@@ -823,99 +820,98 @@ task classDelegation_withBridge(type: RunKonanTest) {
 }
 
 task delegatedProperty_simpleVal(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "x\n42\n"
     source = "codegen/delegatedProperty/simpleVal.kt"
 }
 
 task delegatedProperty_simpleVar(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "get x\n42\nset x\nget x\n117\n"
     source = "codegen/delegatedProperty/simpleVar.kt"
 }
 
 task delegatedProperty_packageLevel(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "x\n42\n"
     source = "codegen/delegatedProperty/packageLevel.kt"
 }
 
 task delegatedProperty_local(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "x\n42\n"
     source = "codegen/delegatedProperty/local.kt"
 }
 
 task delegatedProperty_delegatedOverride(type: LinkKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "156\nx\n117\n42\n"
     source = "codegen/delegatedProperty/delegatedOverride_main.kt"
     lib = "codegen/delegatedProperty/delegatedOverride_lib.kt"
 }
 
 task delegatedProperty_lazy(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "computed!\nHello\nHello\n"
     source = "codegen/delegatedProperty/lazy.kt"
 }
 
 task delegatedProperty_observable(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "<no name> -> first\nfirst -> second\n"
     source = "codegen/delegatedProperty/observable.kt"
 }
 
 task delegatedProperty_map(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "John Doe\n25\n"
     source = "codegen/delegatedProperty/map.kt"
 }
 
 task propertyCallableReference_valClass(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "42\n117\n"
     source = "codegen/propertyCallableReference/valClass.kt"
 }
 
 task propertyCallableReference_valModule(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "42\n"
     source = "codegen/propertyCallableReference/valModule.kt"
 }
 
 task propertyCallableReference_varClass(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // RuntimeError: memory access out of bounds
+    expectedFail = (project.testTarget == 'wasm32') // RuntimeError: memory access out of bounds
     goldValue = "117\n117\n42\n42\n"
     source = "codegen/propertyCallableReference/varClass.kt"
 }
 
 task propertyCallableReference_varModule(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "117\n117\n"
     source = "codegen/propertyCallableReference/varModule.kt"
 }
 
 task propertyCallableReference_valExtension(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "42\n117\n"
     source = "codegen/propertyCallableReference/valExtension.kt"
 }
 
 task propertyCallableReference_varExtension(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "117\n117\n42\n42\n"
     source = "codegen/propertyCallableReference/varExtension.kt"
 }
 
 task propertyCallableReference_linkTest(type: LinkKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "42\n117\n"
     source = "codegen/propertyCallableReference/linkTest_main.kt"
     lib = "codegen/propertyCallableReference/linkTest_lib.kt"
 }
 
 task propertyCallableReference_dynamicReceiver(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "42\n"
     source = "codegen/propertyCallableReference/dynamicReceiver.kt"
 }
@@ -926,7 +922,7 @@ task lateinit_initialized(type: RunKonanTest) {
 }
 
 task lateinit_notInitialized(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "OK\n"
     source = "codegen/lateinit/notInitialized.kt"
 }
@@ -1028,35 +1024,30 @@ task coroutines_controlFlow_inline3(type: RunKonanTest) {
 
 task coroutines_controlFlow_tryCatch1(type: RunKonanTest) {
     disabled = (project.testTarget == 'wasm32') // llvm: 'WebAssembly hasn't implemented computed gotos'
-    disabled = (project.testTarget == 'wasm32') // uses exceptions.
     goldValue = "s1\n42\n"
     source = "codegen/coroutines/controlFlow_tryCatch1.kt"
 }
 
 task coroutines_controlFlow_tryCatch2(type: RunKonanTest) {
     disabled = (project.testTarget == 'wasm32') // llvm: 'WebAssembly hasn't implemented computed gotos'
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions
     goldValue = "s1\n42\n"
     source = "codegen/coroutines/controlFlow_tryCatch2.kt"
 }
 
 task coroutines_controlFlow_tryCatch3(type: RunKonanTest) {
     disabled = (project.testTarget == 'wasm32') // llvm: 'WebAssembly hasn't implemented computed gotos'
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions
     goldValue = "s2\nf2\n1\n"
     source = "codegen/coroutines/controlFlow_tryCatch3.kt"
 }
 
 task coroutines_controlFlow_tryCatch4(type: RunKonanTest) {
     disabled = (project.testTarget == 'wasm32') // llvm: 'WebAssembly hasn't implemented computed gotos'
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions
     goldValue = "s2\nf2\n1\n"
     source = "codegen/coroutines/controlFlow_tryCatch4.kt"
 }
 
 task coroutines_controlFlow_tryCatch5(type: RunKonanTest) {
     disabled = (project.testTarget == 'wasm32') // llvm: 'WebAssembly hasn't implemented computed gotos'
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions
     goldValue = "s2\ns1\nError\n42\n"
     source = "codegen/coroutines/controlFlow_tryCatch5.kt"
 }
@@ -1085,7 +1076,7 @@ task AbstractMutableCollection(type: RunKonanTest) {
 }
 
 task BitSet(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     expectedExitStatus = 0
     source = "runtime/collections/BitSet.kt"
 }
@@ -1106,13 +1097,11 @@ task array2(type: RunKonanTest) {
 }
 
 task sort0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "[a, b, x]\n[-1, 0, 42, 239, 100500]\n"
     source = "runtime/collections/sort0.kt"
 }
 
 task sort1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "[a, b, x]\n[-1, 0, 42, 239, 100500]\n"
     source = "runtime/collections/sort1.kt"
 }
@@ -1281,7 +1270,7 @@ task boxing6(type: RunKonanTest) {
 }
 
 task boxing7(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "1\n0\n"
     source = "codegen/boxing/boxing7.kt"
 }
@@ -1337,13 +1326,13 @@ task hash0(type: RunKonanTest) {
 }
 
 task array_list1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "OK\n"
     source = "runtime/collections/array_list1.kt"
 }
 
 task hash_map0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32 (remainder by zero)
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32 (remainder by zero)
     goldValue = "OK\n"
     source = "runtime/collections/hash_map0.kt"
 }
@@ -1366,31 +1355,30 @@ task listof1(type: RunKonanTest) {
 
 
 task moderately_large_array(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // ReferenceError: PROT_READ is not defined.
+    expectedFail = (project.testTarget == 'wasm32') // ReferenceError: PROT_READ is not defined.
     goldValue = "0\n"
     source = "runtime/collections/moderately_large_array.kt"
 }
 
 task moderately_large_array1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // ReferenceError: PROT_READ is not defined.
+    expectedFail = (project.testTarget == 'wasm32') // ReferenceError: PROT_READ is not defined.
     goldValue = "-45392\n"
     source = "runtime/collections/moderately_large_array1.kt"
 }
 
 task string_builder0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "OK\n"
     source = "runtime/text/string_builder0.kt"
 }
 
 task string0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "true\ntrue\nПРИВЕТ\nпривет\nПока\ntrue\n"
     source = "runtime/text/string0.kt"
 }
 
 task parse0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue = "false\n" +
             "true\n" +
             "-1\n" +
@@ -1410,127 +1398,112 @@ task to_string0(type: RunKonanTest) {
 }
 
 task chars0(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     source = "runtime/text/chars0.kt"
     expectedExitStatus = 0
 }
 
 task catch1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Throwable\nDone\n"
     source = "runtime/exceptions/catch1.kt"
 }
 
 task catch2(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Error\nDone\n"
     source = "runtime/exceptions/catch2.kt"
 }
 
 task catch7(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Error happens\n"
     source = "runtime/exceptions/catch7.kt"
 }
 
 task extend_exception(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "OK\n"
     source = "runtime/exceptions/extend0.kt"
 }
 
 task catch3(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Throwable\nDone\n"
     source = "codegen/try/catch3.kt"
 }
 
 task catch4(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Error\nDone\n"
     source = "codegen/try/catch4.kt"
 }
 
 task catch5(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Error\nDone\n"
     source = "codegen/try/catch5.kt"
 }
 
 task catch6(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Error\nDone\n"
     source = "codegen/try/catch6.kt"
 }
 
 task catch8(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Error happens\n"
     source = "codegen/try/catch8.kt"
 }
 
 task finally1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Try\nFinally\nDone\n"
     source = "codegen/try/finally1.kt"
 }
 
 task finally2(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Try\nCaught Error\nFinally\nDone\n"
     source = "codegen/try/finally2.kt"
 }
 
 task finally3(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Try\nFinally\nCaught Error\nDone\n"
     source = "codegen/try/finally3.kt"
 }
 
 task finally4(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Try\nCatch\nFinally\nCaught Exception\nDone\n"
     source = "codegen/try/finally4.kt"
 }
 
 task finally5(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Done\nFinally\n0\n"
     source = "codegen/try/finally5.kt"
 }
 
 task finally6(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Done\nFinally\n1\n"
     source = "codegen/try/finally6.kt"
 }
 
 task finally7(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Done\nFinally\n1\n"
     source = "codegen/try/finally7.kt"
 }
 
 task finally8(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Finally 1\nFinally 2\n42\n"
     source = "codegen/try/finally8.kt"
 }
 
 task finally9(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Finally 1\nFinally 2\nAfter\n"
     source = "codegen/try/finally9.kt"
 }
 
 task finally10(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Finally\nAfter\n"
     source = "codegen/try/finally10.kt"
 }
 
 task finally11(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Finally\nCatch 2\nDone\n"
     source = "codegen/try/finally11.kt"
 }
@@ -1546,25 +1519,21 @@ task uninitialized_val(type: RunKonanTest) {
 }
 
 task try1(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "5\n"
     source = "codegen/try/try1.kt"
 }
 
 task try2(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "6\n"
     source = "codegen/try/try2.kt"
 }
 
 task try3(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "6\n"
     source = "codegen/try/try3.kt"
 }
 
 task try4(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Try\n5\n"
     source = "codegen/try/try4.kt"
 }
@@ -1601,7 +1570,6 @@ task spread_operator_0(type: RunKonanTest) {
 }
 
 task main_exception(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
     // TODO: cannot currently check the output because the exact stacktrace strings are unpredictable.
     // goldValue = "Uncaught exception from Kotlin's main: Throwable\n"
     expectedExitStatus = 1
@@ -1723,7 +1691,7 @@ task objectExpression3(type: RunKonanTest) {
 }
 
 task initializers2(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "init globalValue2\n" +
                 "init globalValue3\n" +
                 "1\n" +
@@ -1734,13 +1702,13 @@ task initializers2(type: RunKonanTest) {
 }
 
 task initializers3(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "42\n"
     source = "runtime/basic/initializers3.kt"
 }
 
 task initializers4(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "1073741824\ntrue\n"
     source = "runtime/basic/initializers4.kt"
 }
@@ -1751,7 +1719,7 @@ task initializers5(type: RunKonanTest) {
 }
 
 task expression_as_statement(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails on wasm32.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails on wasm32.
     goldValue = "Ok\n"
     source = "codegen/basics/expression_as_statement.kt"
 }
@@ -1773,7 +1741,7 @@ task memory_var4(type: RunKonanTest) {
 }
 
 task memory_throw_cleanup(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // Uses exceptions.
+    expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Ok\n"
     source = "runtime/memory/throw_cleanup.kt"
 }
@@ -1950,7 +1918,7 @@ task deserialized_listof0(type: RunKonanTest) {
 }
 
 task deserialized_members(type: LinkKonanTest) {
-    disabled = (project.testTarget == 'wasm32') // The test fails.
+    expectedFail = (project.testTarget == 'wasm32') // The test fails.
     goldValue=
         "first level\n"+
         "second level\n"+
