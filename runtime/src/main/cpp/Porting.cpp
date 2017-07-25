@@ -218,6 +218,51 @@ extern "C" {
     void fmodf(void) {}
     void fmod(void) {}
 
+    void *memcpy(void *dst, const void *src, size_t n) {
+        for (long i = 0; i != n; ++i)
+            *((char*)dst + i) = *((char*)src + i);
+        return dst;
+    }
+
+    void *memmove(void *dst, const void *src, size_t len)  {
+        if (src < dst) {
+            for (long i = len; i != 0; --i) {
+                *((char*)dst + i - 1) = *((char*)src + i - 1);
+            } 
+        } else {
+            memcpy(dst, src, len);
+        }
+        return dst;
+    }
+
+    int memcmp(const void *s1, const void *s2, size_t n) {
+        for (long i = 0; i != n; ++i) {
+            if (*((char*)s1 + i) != *((char*)s2 + i)) {
+                return *((char*)s1 + i) - *((char*)s2 + i);
+            }
+        }
+        return 0;
+    }
+
+    void *memset(void *b, int c, size_t len) {
+        for (long i = 0; i != len; ++i) {
+            *((char*)b + i) = c;
+        }
+        return b;
+    }
+
+    size_t strlen(const char *s) {
+        for (long i = 0;; ++i) {
+            if (s[i] == 0) return i;
+        }
+    }
+
+    size_t strnlen(const char *s, size_t maxlen) {
+        for (long i = 0; i<=maxlen; ++i) {
+            if (s[i] == 0) return i;
+        }
+        return maxlen;
+    }
 #endif
 
 }
