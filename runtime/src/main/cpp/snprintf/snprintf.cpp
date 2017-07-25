@@ -177,6 +177,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 extern "C" int rpl_vsnprintf(char *, size_t, const char *, va_list);
+#define malloc(size) konan:calloc(1, size)
 
 /**** End of Konan-specific c99-snprintf configuration.   ****/
 

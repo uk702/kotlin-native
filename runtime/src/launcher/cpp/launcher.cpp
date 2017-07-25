@@ -64,9 +64,9 @@ extern "C" int Konan_js_arg_size(int index);
 extern "C" int Konan_js_fetch_arg(int index, char* ptr);
 
 extern "C" int Konan_js_main(int argc) {
-    char** argv = (char**)calloc(1, argc);
+    char** argv = (char**)konan::calloc(1, argc);
     for (int i = 0; i< argc; ++i) {
-        argv[i] = (char*)calloc(1, Konan_js_arg_size(i));
+        argv[i] = (char*)konan::calloc(1, Konan_js_arg_size(i));
         Konan_js_fetch_arg(i, argv[i]);
     }
     return Konan_main(argc, (const char**)argv);

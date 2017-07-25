@@ -50,7 +50,7 @@ class AutoFree {
   AutoFree(void* mem): mem_(mem) {}
 
   ~AutoFree() {
-    free(mem_);
+    konan::free(mem_);
   }
 };
 
